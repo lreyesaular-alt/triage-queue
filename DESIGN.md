@@ -4,9 +4,8 @@
 
 This project implements a hospital triage queue using Python. Patients are attended according to their urgency level, while maintaining arrival order among patients with the same priority.
 
-## Data Structures
 
-The implementation uses a dictionary containing three `deque` collections from Python's `collections` module.
+### Patient
 
 - **Level 1:** Critical patients, highest priority.
 - **Level 2:** Urgent patients.
@@ -51,3 +50,36 @@ The implementation handles empty queues, invalid priority levels, empty patient 
 Six automated unit tests verify priority ordering, FIFO behavior, peek functionality, empty queues, statistics, and invalid priority levels.
 
 All six tests passed successfully.
+
+## Concurrency and Worker Safety
+
+The current implementation is designed for a single-threaded CLI.
+
+In a future multi-worker environment, a shared lock would
+protect all queue mutations.
+
+When a worker calls dequeue(), it must acquire the lock,
+select the highest-priority available patient, remove that
+patient from the queue, and release the lock.
+
+When another worker calls enqueue(), it must acquire the
+same lock before inserting a new patient.
+
+This ensures that no two workers can remove the same
+patient simultaneously.
+
+The lock also prevents enqueue() and dequeue() from
+modifying the queues at the same time.
+
+If a critical patient arrives before the dequeue
+operation acquires the lock, that patient will be
+selected first.
+
+If the dequeue operation has already selected and
+removed another patient, that operation finishes first.
+The critical patient will receive priority in the
+next dequeue operation.
+
+The implementation could use threading.Lock from
+Python's standard library if concurrent workers
+were introduced.
